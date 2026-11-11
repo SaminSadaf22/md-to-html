@@ -51,11 +51,12 @@ def convert(markdown):
             out.append(f"<h{level}>{inline(heading.group(2))}</h{level}>")
             continue
 
-        if stripped.startswith("- "):
+        bullet = re.match(r"^[-*+]\s+(.*)$", stripped)
+        if bullet:
             if not in_list:
                 out.append("<ul>")
                 in_list = True
-            out.append(f"<li>{inline(stripped[2:])}</li>")
+            out.append(f"<li>{inline(bullet.group(1))}</li>")
             continue
 
         if in_list:
@@ -72,8 +73,16 @@ def main():
     if len(sys.argv) != 3:
         print("usage: convert.py input.md output.html")
         return 1
-    source = Path(sys.argv[1]).read_text(encoding="utf-8")
-    Path(sys.argv[2]).write_text(convert(source), encoding="utf-8")
+    try:
+        source = Path(sys.argv[1]).read_text(encoding="utf-8")
+    except OSError as exc:
+        print(f"error: {exc}")
+        return 1
+    try:
+        Path(sys.argv[2]).write_text(convert(source), encoding="utf-8")
+    except OSError as exc:
+        print(f"error: {exc}")
+        return 1
     print(f"wrote {sys.argv[2]}")
     return 0
 
