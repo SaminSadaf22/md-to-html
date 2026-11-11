@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Convert a small subset of Markdown to HTML.
 
-Supports headings, bold/italic, unordered lists and paragraphs. No dependencies.
+Supports headings, bold/italic, inline code, unordered lists and paragraphs. No dependencies.
 """
 
 import html
@@ -12,9 +12,20 @@ from pathlib import Path
 
 def inline(text):
     text = html.escape(text)
+
+    # Protect inline code spans so their contents are not touched by bold/italic rules.
+    code_spans = []
+
+    def stash(match):
+        code_spans.append(match.group(1))
+        return f"\x00CODE{len(code_spans) - 1}\x00"
+
+    text = re.sub(r"`(.+?)`", stash, text)
     text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
     text = re.sub(r"\*(.+?)\*", r"<em>\1</em>", text)
-    text = re.sub(r"`(.+?)`", r"<code>\1</code>", text)
+
+    for i, code in enumerate(code_spans):
+        text = text.replace(f"\x00CODE{i}\x00", f"<code>{code}</code>")
     return text
 
 
